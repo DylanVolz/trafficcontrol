@@ -878,7 +878,7 @@ sub main {
     setupDatabaseData( $dbh, $adminconf, $paramconf );
 
     InstallUtils::logger("Starting Traffic Ops", "info" );
-    InstallUtils::execCommand("/sbin/service traffic_ops restart");
+    InstallUtils::execCommand("/etc/rc.d/init.d/traffic_ops restart");
 
     InstallUtils::logger("Waiting for Traffic Ops to restart", "info" );
 

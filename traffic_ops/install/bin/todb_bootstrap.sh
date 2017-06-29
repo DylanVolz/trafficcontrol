@@ -20,13 +20,21 @@
 
 # Example:
 #
-#    $ TODB_USERNAME_PASSWORD=<yourpassword> ./todb_bootstrap.sh
+#    $ TODB_HOST=<host> TODB_PORT=<port> TODB_USERNAME_PASSWORD=<yourpassword> ./todb_bootstrap.sh
 #
 TODB_USERNAME=traffic_ops
 TODB_NAME=traffic_ops
 
 if [[ -z $TODB_USERNAME ]]; then
     echo "Using environment database user: $TODB_USERNAME"
+fi
+
+if [[ -z $TODB_HOST ]]; then
+    TODB_HOST=localhost
+fi
+
+if [[ -z $TODB_PORT ]]; then
+    TODB_PORT=5432
 fi
 
 if [[ -z $TODB_USERNAME_PASSWORD ]]; then
@@ -43,7 +51,7 @@ else
     echo "Using environment database password"
 fi
 echo "Setting up database role: $TODB_USERNAME"
-psql -U postgres -h localhost -c "CREATE USER $TODB_USERNAME WITH ENCRYPTED PASSWORD '$TODB_USERNAME_PASSWORD';"
-createdb $TODB_NAME --owner $TODB_USERNAME -U postgres -h localhost
+psql -U postgres -h $TODB_HOST -p $TODB_PORT -c "CREATE USER $TODB_USERNAME WITH ENCRYPTED PASSWORD '$TODB_USERNAME_PASSWORD';"
+createdb $TODB_NAME --owner $TODB_USERNAME -U postgres -h $TODB_HOST -p $TODB_PORT
 
 echo "Successfully set up database '$TODB_NAME' with role '$TODB_USERNAME'"

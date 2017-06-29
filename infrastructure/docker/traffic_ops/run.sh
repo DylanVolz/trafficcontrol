@@ -19,195 +19,35 @@
 # Script for running the Dockerfile for Traffic Ops.
 # The Dockerfile sets up a Docker image which can be used for any new Traffic Ops container;
 # This script, which should be run when the container is run (it's the ENTRYPOINT), will configure the container.
-#
-# The following environment variables must be set, ordinarily by `docker run -e` arguments:
-# MYSQL_IP
-# MYSQL_PORT
-# MYSQL_ROOT_PASS
-# MYSQL_TRAFFIC_OPS_PASS
-# ADMIN_USER
-# ADMIN_PASS
-# CERT_COUNTRY
-# CERT_STATE
-# CERT_CITY
-# CERT_COMPANY
+
+# The following environment variables must be set (ordinarily by `docker run -e` arguments):
 # DOMAIN
-
-# TODO:  Unused -- should be removed?  TRAFFIC_VAULT_PASS
-
-# Check that env vars are set
-envvars=( MYSQL_IP MYSQL_PORT MYSQL_ROOT_PASS MYSQL_TRAFFIC_OPS_PASS ADMIN_USER ADMIN_PASS CERT_COUNTRY CERT_STATE CERT_CITY CERT_COMPANY DOMAIN)
+# TRAFFIC_VAULT_PASS
+envvars=( DOMAIN TRAFFIC_VAULT_PASS)
 for v in $envvars
 do
 	if [[ -z $$v ]]; then echo "$v is unset"; exit 1; fi
 done
 
 start() {
-		service traffic_ops start
+		/etc/rc.d/init.d/traffic_ops start
 		exec tail -f /var/log/traffic_ops/traffic_ops.log
 }
 
 init() {
-		mysql -h $MYSQL_IP -P $MYSQL_PORT -u root -p$MYSQL_ROOT_PASS -e "GRANT ALL ON * . * TO 'traffic_ops'@'localhost' IDENTIFIED BY '$MYSQL_TRAFFIC_OPS_PASS';"
+		echo "{\"user\": \"riakuser\",\"password\": \"$TRAFFIC_VAULT_PASS\"}" > /opt/traffic_ops/app/conf/production/riak.conf
+		#pull needed values from file: /opt/traffic_ops/app/defaults.json (this json file is a dictionary of lists)
+		# key = "/opt/traffic_ops/app/conf/production/database.conf"
+		PSQL_IP="$( cat /opt/traffic_ops/app/defaults.json | python -c 'import json,sys;obj=json.load(sys.stdin);match=[x["Database server hostname IP or FQDN"] for x in obj["/opt/traffic_ops/app/conf/production/database.conf"] if "Database server hostname IP or FQDN" in x]; print match[0]')"
+		PSQL_PORT="$( cat /opt/traffic_ops/app/defaults.json | python -c 'import json,sys;obj=json.load(sys.stdin);match=[x["Database port number"] for x in obj["/opt/traffic_ops/app/conf/production/database.conf"] if "Database port number" in x]; print match[0]')"
+		PSQL_TRAFFIC_OPS_PASS="$( cat /opt/traffic_ops/app/defaults.json | python -c 'import json,sys;obj=json.load(sys.stdin);match=[x["Password for Traffic Ops database user"] for x in obj["/opt/traffic_ops/app/conf/production/database.conf"] if "Password for Traffic Ops database user" in x]; print match[0]')"
+		# key = "/opt/traffic_ops/install/data/json/users.json"
+		ADMIN_USER="$( cat /opt/traffic_ops/app/defaults.json | python -c 'import json,sys;obj=json.load(sys.stdin);match=[x["Administration username for Traffic Ops"] for x in obj["/opt/traffic_ops/install/data/json/users.json"] if "Administration username for Traffic Ops" in x]; print match[0]')"
+		ADMIN_PASS="$( cat /opt/traffic_ops/app/defaults.json | python -c 'import json,sys;obj=json.load(sys.stdin);match=[x["Password for the admin user"] for x in obj["/opt/traffic_ops/install/data/json/users.json"] if "Password for the admin user" in x]; print match[0]')"  	
+     	
+		TODB_HOST=$PSQL_IP TODB_PORT=$PSQL_PORT TODB_USERNAME_PASSWORD=$PSQL_TRAFFIC_OPS_PASS /opt/traffic_ops/install/bin/todb_bootstrap.sh
 
-		printf '\
-#!/usr/bin/expect -f\n \
-set force_conservative 0  ;# set to 1 to force conservative mode even if\n\
-                          ;# script wasn'\''t run conservatively originally\n\
-if {$force_conservative} {\n\
-	 set send_slow {1 .1}\n\
-	 proc send {ignore arg} {\n\
-	 sleep .1\n\
-	 exp_send -s -- $arg\n\
-	 }\n\
-}\n\
-set timeout -1\n\
-spawn /opt/traffic_ops/install/bin/postinstall\n\
-match_max 100000\n\
-expect -exact "Hit ENTER to continue:  "\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "Database type \[mysql\]:  "\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "Database name \[traffic_ops_db\]:  "\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "Database server hostname IP or FQDN \[localhost\]:  "\n\
-sleep 0.5\n\
-send -- "$env(MYSQL_IP)\\r"\n\
-expect -exact "Database port number \[3306\]:  "\n\
-sleep 0.5\n\
-send -- "$env(MYSQL_PORT)\\r"\n\
-expect -exact "Traffic Ops database user \[traffic_ops\]:  "\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "Password for traffic_ops:  "\n\
-sleep 0.5\n\
-send -- "$env(MYSQL_TRAFFIC_OPS_PASS)\\r"\n\
-expect -exact "Re-Enter Password for traffic_ops:  "\n\
-sleep 0.5\n\
-send -- "$env(MYSQL_TRAFFIC_OPS_PASS)\\r"\n\
-expect -exact "Database server root (admin) user name \[root\]:  "\n\
-sleep 0.5\n\
-send -- "root\\r"\n\
-expect -exact "Database server root password:  "\n\
-sleep 0.5\n\
-send -- "$env(MYSQL_ROOT_PASS)\\r"\n\
-expect -exact "Is the above information correct (y/n) \[n\]:  "\n\
-sleep 0.5\n\
-send -- "y\\r"\n\
-expect -exact "Traffic Ops url \[https://localhost\]:  "\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "Human-readable CDN Name.  (No whitespace, please) \[kabletown_cdn\]:  "\n\
-sleep 0.5\n\
-send -- "cdn\\r"\n\
-expect -exact "DNS sub-domain for which your CDN is authoritative \[cdn1.kabletown.net\]:  "\n\
-sleep 0.5\n\
-send -- "$env(DOMAIN)\\r"\n\
-expect -exact "Fully qualified name of your CentOS 6.5 ISO kickstart tar file, or '\''na'\'' to skip and add files later \[/var/cache/centos65.tgz\]:  "\n\
-sleep 0.5\n\
-send -- "na\\r"\n\
-expect -exact "Fully qualified location to store your ISO kickstart files \[/var/www/files\]:  "\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "Is the above information correct (y/n) \[n\]:  "\n\
-sleep 0.5\n\
-send -- "y\\r"\n\
-expect -exact "Administration username for Traffic Ops \[admin\]:  "\n\
-sleep 0.5\n\
-send -- "$env(ADMIN_USER)\\r"\n\
-expect "Password for the admin user *:  "\n\
-sleep 0.5\n\
-send -- "$env(ADMIN_PASS)\\r"\n\
-expect "Re-Enter Password for the admin user *:  "\n\
-sleep 0.5\n\
-send -- "$env(ADMIN_PASS)\\r"\n\
-expect -exact "Do you wish to create an ldap configuration for access to traffic ops \[y/n\] ? \[n\]:  "\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "Do want to add a new one (only 2 will be kept) \[y/n\] ? \[y\]:  "\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "Do you want one generated for you \[y/n\] ? \[y\]:  "\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "Hit Enter when you are ready to continue:  "\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "Enter pass phrase for server.key:"\n\
-sleep 0.5\n\
-send -- "pass\\r"\n\
-expect -exact "Verifying - Enter pass phrase for server.key:"\n\
-sleep 0.5\n\
-send -- "pass\\r"\n\
-expect -exact "Enter pass phrase for server.key:"\n\
-sleep 0.5\n\
-send -- "pass\\r"\n\
-expect -exact "Country Name (2 letter code) \[XX\]:"\n\
-sleep 0.5\n\
-send -- "$env(CERT_COUNTRY)\\r"\n\
-expect -exact "State or Province Name (full name) \[\]:"\n\
-sleep 0.5\n\
-send -- "$env(CERT_STATE)\\r"\n\
-expect -exact "Locality Name (eg, city) \[Default City\]:"\n\
-sleep 0.5\n\
-send -- "$env(CERT_CITY)\\r"\n\
-expect -exact "Organization Name (eg, company) \[Default Company Ltd\]:"\n\
-sleep 0.5\n\
-send -- "$env(CERT_COMPANY)\\r"\n\
-expect -exact "Organizational Unit Name (eg, section) \[\]:"\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "Common Name (eg, your name or your server'\''s hostname) \[\]:"\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "Email Address \[\]:"\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "A challenge password \[\]:"\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "An optional company name \[\]:"\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "Enter pass phrase for server.key.orig:"\n\
-sleep 0.5\n\
-send -- "pass\\r"\n\
-expect -exact "Install Cron entry to clean install .iso files older than 7 days? \[y/n\] \[n\]:"
-send -- "\\r"\n\
-sleep 0.5\n\
-expect -exact "Health Polling Interval (milliseconds) \[8000\]"\n\
-sleep 0.5\n
-send -- "\\r"\n\
-expect -exact "TLD SOA admin \[traffic_ops\]:"\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "TrafficServer Drive Prefix \[/dev/sd\]:"\n\
-sleep 0.5\n\
-send -- "/dev/ram\\r"\n\
-expect -exact "TrafficServer RAM Drive Prefix \[/dev/ram\]:"\n\
-sleep 0.5\n\
-send -- "/dev/ram\\r"\n\
-expect -exact "TrafficServer RAM Drive Letters (comma separated) \[0,1,2,3,4,5,6,7\]:"\n\
-sleep 0.5\n\
-send -- "1\\r"\n\
-expect -exact "Health Threshold Load Average \[25\]:"\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "Health Threshold Available Bandwidth in Kbps \[1750000\]:"\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "Traffic Server Health Connection Timeout (milliseconds) \[2000\]:"\n\
-sleep 0.5\n\
-send -- "\\r"\n\
-expect -exact "Shutdown Traffic Ops \[y/n\] \[n\]:  "\n\
-sleep 0.5\n\
-send -- "n\\r"\
-' > postinstall.exp
-
-		export TERM=xterm && export USER=root && expect postinstall.exp
+		export TERM=xterm && export USER=root && /opt/traffic_ops/install/bin/postinstall -cfile=/opt/traffic_ops/app/defaults.json
 
 		TRAFFIC_OPS_URI="https://localhost"
 

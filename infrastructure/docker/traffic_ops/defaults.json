@@ -1,0 +1,147 @@
+{
+   "/opt/traffic_ops/install/data/profiles/" : [
+      {
+         "Add custom profiles?" : "no",
+         "config_var" : "custom_profiles"
+      }
+   ],
+   "/opt/traffic_ops/app/db/dbconf.yml" : [
+      {
+         "Database server root (admin) user" : "postgres",
+         "config_var" : "pgUser"
+      },
+      {
+         "Password for database server admin" : "secretrootpass",
+         "hidden" : "true",
+         "config_var" : "pgPassword"
+      },
+      {
+         "Download Maxmind Database?" : "yes",
+         "config_var" : "maxmind"
+      }
+   ],
+   "/opt/traffic_ops/install/data/json/profiles.json" : [
+      {
+         "Traffic Ops url" : "my-traffic-ops",
+         "config_var" : "tm.url"
+      },
+      {
+         "Human-readable CDN Name.  (No whitespace, please)" : "cdn",
+         "config_var" : "cdn_name"
+      },
+      {
+         "DNS sub-domain for which your CDN is authoritative" : "cdnetv6",
+         "config_var" : "dns_subdomain"
+      }
+   ],
+   "/opt/traffic_ops/app/conf/ldap.conf" : [
+      {
+         "Do you want to set up LDAP?" : "no",
+         "config_var" : "setupLdap"
+      },
+      {
+         "LDAP server hostname" : "",
+         "config_var" : "hostname"
+      },
+      {
+         "LDAP Admin DN" : "",
+         "config_var" : "admin_dn"
+      },
+      {
+         "LDAP Admin Password" : "",
+         "hidden" : "true",
+         "config_var" : "password"
+      },
+      {
+         "LDAP Search Base" : "",
+         "config_var" : "search_base"
+      }
+   ],
+   "/opt/traffic_ops/app/conf/cdn.conf" : [
+      {
+         "config_var" : "genSecret",
+         "Generate a new secret?" : "yes"
+      },
+      {
+         "Number of secrets to keep?" : "10",
+         "config_var" : "keepSecrets"
+      },
+      {
+         "Number of workers?" : "12",
+         "config_var" : "workers"
+      }
+   ],
+   "/opt/traffic_ops/app/conf/production/database.conf" : [
+      {
+         "config_var" : "type",
+         "Database type" : "Pg"
+      },
+      {
+         "Database name" : "traffic_ops",
+         "config_var" : "dbname"
+      },
+      {
+         "Database server hostname IP or FQDN" : "my-traffic-ops-psql",
+         "config_var" : "hostname"
+      },
+      {
+         "Database port number" : "5432",
+         "config_var" : "port"
+      },
+      {
+         "Traffic Ops database user" : "traffic_ops",
+         "config_var" : "user"
+      },
+      {
+         "Password for Traffic Ops database user" : "supersecretpassword",
+         "hidden" : "true",
+         "config_var" : "password"
+      }
+   ],
+   "/opt/traffic_ops/install/data/json/users.json" : [
+      {
+         "Administration username for Traffic Ops" : "admin",
+         "config_var" : "tmAdminUser"
+      },
+      {
+         "hidden" : "true",
+         "config_var" : "tmAdminPw",
+         "Password for the admin user" : "admin"
+      }
+   ],
+   "/opt/traffic_ops/install/data/json/openssl_configuration.json" : [
+      {
+         "Do you want to generate a certificate?" : "yes",
+         "config_var" : "genCert"
+      },
+      {
+         "Country Name (2 letter code)" : "",
+         "config_var" : "country"
+      },
+      {
+         "State or Province Name (full name)" : "",
+         "config_var" : "state"
+      },
+      {
+         "Locality Name (eg, city)" : "",
+         "config_var" : "locality"
+      },
+      {
+         "Organization Name (eg, company)" : "",
+         "config_var" : "company"
+      },
+      {
+         "Organizational Unit Name (eg, section)" : "",
+         "config_var" : "org_unit"
+      },
+      {
+         "Common Name (eg, your name or your server's hostname)" : "",
+         "config_var" : "common_name"
+      },
+      {
+         "RSA Passphrase" : "CHANGEME!!",
+         "hidden" : "true",
+         "config_var" : "rsaPassword"
+      }
+   ]
+}

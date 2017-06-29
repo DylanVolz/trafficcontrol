@@ -35,6 +35,12 @@
 # GATEWAY
 # CREATE_TO_DB_ENTRY (If set to yes, create the TO db entry for this server if set to no, assume it it already there)
 
+envvars=( ADMIN_PASS USER_PASS CERT_COUNTRY CERT_STATE CERT_CITY CERT_COMPANY TRAFFIC_OPS_URI TRAFFIC_OPS_USER TRAFFIC_OPS_PASS DOMAIN IP GATEWAY CREATE_TO_DB_ENTRY)
+for v in $envvars
+do
+	if [[ -z $$v ]]; then echo "$v is unset"; exit 1; fi
+done
+
 start() {
 	/etc/init.d/riak restart
 	exec tail -f /var/log/riak/console.log
@@ -50,9 +56,9 @@ init() {
 	TMP_DOMAIN=$DOMAIN
 	TMP_GATEWAY=$GATEWAY
 
-	echo "Got IP: $TMP_IP"
+	echo "Got IP: $TMP_IP" #for this to work currently on mac (if the ip is even used?) you have to run: sudo ifconfig lo0 alias <a free ip>.  and then use that ip as the --env IP=<the previously free ip> but doesnt seem to be used...
 	echo "Got Domain: $TMP_DOMAIN"
-	echo "Got Gateway: $TMP_GATEWAY"
+	echo "Got Gateway: $TMP_GATEWAY" # doesn't seem to be used
 
 	if [ "$CREATE_TO_DB_ENTRY" = "YES" ] ; then
 		TMP_CACHEGROUP_ID="$(curl -s -k -X GET -H "Cookie: mojolicious=$TMP_TO_COOKIE" $TRAFFIC_OPS_URI/api/1.2/cachegroups.json | python -c 'import json,sys;obj=json.load(sys.stdin);match=[x["id"] for x in obj["response"] if x["name"]=="mid-east"]; print match[0]')"
@@ -69,8 +75,13 @@ init() {
 	
 		TMP_CDN_ID="$(curl -s -k -X GET -H "Cookie: mojolicious=$TMP_TO_COOKIE" $TRAFFIC_OPS_URI/api/1.2/cdns.json | python -c 'import json,sys;obj=json.load(sys.stdin);match=[x["id"] for x in obj["response"] if x["name"]=="cdn"]; print match[0]')"
 		echo "Got cdn ID: $TMP_CDN_ID"
-	
-		curl -v -k -X POST -H "Cookie: mojolicious=$TMP_TO_COOKIE" --data-urlencode "host_name=$HOSTNAME" --data-urlencode "domain_name=$TMP_DOMAIN" --data-urlencode "interface_name=eth0" --data-urlencode "ip_address=$TMP_IP" --data-urlencode "ip_netmask=255.255.0.0" --data-urlencode "ip_gateway=$TMP_GATEWAY" --data-urlencode "interface_mtu=9000" --data-urlencode "cdn=$TMP_CDN_ID" --data-urlencode "cachegroup=$TMP_CACHEGROUP_ID" --data-urlencode "phys_location=$TMP_PHYS_LOCATION_ID" --data-urlencode "type=$TMP_SERVER_TYPE_ID" --data-urlencode "profile=$TMP_SERVER_PROFILE_ID" --data-urlencode "tcp_port=8088" $TRAFFIC_OPS_URI/server/create
+
+
+		echo "about to edit profile and add to cdn:\n"
+		#need to add server profile to correct cdn
+		curl -v -s -k -X POST -H "Cookie: mojolicious=$TMP_TO_COOKIE" --data 'profile.name=RIAK_ALL&profile.description=Riak+profile+for+all+CDNs&profile.cdn='$TMP_CDN_ID'&profile.type=RIAK_PROFILE' $TRAFFIC_OPS_URI/profile/$TMP_SERVER_PROFILE_ID/update
+		
+		curl -v -k -X POST -H "Cookie: mojolicious=$TMP_TO_COOKIE" --data-urlencode "offline_reason=pre-startup" --data-urlencode "host_name=$HOSTNAME" --data-urlencode "domain_name=$TMP_DOMAIN" --data-urlencode "interface_name=eth0" --data-urlencode "ip_address=$TMP_IP" --data-urlencode "ip_netmask=255.255.0.0" --data-urlencode "ip_gateway=$TMP_GATEWAY" --data-urlencode "interface_mtu=9000" --data-urlencode "cdn=$TMP_CDN_ID" --data-urlencode "cachegroup=$TMP_CACHEGROUP_ID" --data-urlencode "phys_location=$TMP_PHYS_LOCATION_ID" --data-urlencode "type=$TMP_SERVER_TYPE_ID" --data-urlencode "profile=$TMP_SERVER_PROFILE_ID" --data-urlencode "tcp_port=8088" $TRAFFIC_OPS_URI/server/create
 
 	fi
 

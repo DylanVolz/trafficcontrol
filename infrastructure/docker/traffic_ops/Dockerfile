@@ -20,48 +20,44 @@
 ############################################################
 
 # Example Build and Run:
-# docker network create cdnet
-# docker build --rm --tag traffic_ops:1.7.0 --build-arg=RPM=http://traffic-control-cdn.net/downloads/1.7.0/RELEASE-1.7.0/traffic_ops-1.7.0-3908.5b77f60f.x86_64.rpm traffic_ops
+# docker network create --ipv6=true cdnetv6 --subnet="2001:db8:1::/64"
+# docker build --rm --tag traffic_ops:2.1 --build-arg RPM=traffic_ops-2.1.0-6485.2303ddd4.el7.x86_64.rpm traffic_ops
 #
-# docker run --name my-traffic-ops-mysql --hostname my-traffic-ops-mysql --net cdnet --env MYSQL_ROOT_PASSWORD=secretrootpass --detach mysql:5.5
+# docker run --name my-traffic-ops-psql --hostname my-traffic-ops-psql --net cdnetv6 --detach postgres
 #
-# docker run --name my-traffic-ops --hostname my-traffic-ops --net cdnet --publish 443:443 --env MYSQL_IP=my-traffic-ops-mysql --env MYSQL_PORT=3306 --env MYSQL_ROOT_PASS=secretrootpass --env MYSQL_TRAFFIC_OPS_PASS=supersecretpassword --env ADMIN_USER=superroot --env ADMIN_PASS=supersecreterpassward --env CERT_COUNTRY=US --env CERT_STATE=Colorado --env CERT_CITY=Denver --env CERT_COMPANY=NotComcast --env TRAFFIC_VAULT_PASS=marginallylesssecret --env DOMAIN=cdnet --detach traffic_ops:1.5.1
 
-FROM centos:7
+#example replacing defaults file with your own defaults:
+# docker run -v /yourpath/to/config.json:/opt/traffic_ops/app/defaults.json --name my-traffic-ops --hostname my-traffic-ops --net cdnetv6 --publish 443:443 --env TRAFFIC_VAULT_PASS=marginallylesssecret --env DOMAIN=cdnetv6 --detach traffic_ops:2.1
+#example for dev use mounting the lib folder
+# docker run -v /Users/dvolz200/workspace/my_trafficcontrol/traffic_ops/app/lib:/opt/traffic_ops/app/lib --name my-traffic-ops-2 --hostname my-traffic-ops --net cdnetv6 --publish 443:443 --env TRAFFIC_VAULT_PASS=marginallylesssecret --env DOMAIN=cdnetv6 --detach traffic_ops:2.1
+# basic example:
+# docker run --name my-traffic-ops --hostname my-traffic-ops --net cdnetv6 --publish 443:443 --env TRAFFIC_VAULT_PASS=marginallylesssecret --env DOMAIN=cdnetv6 --detach traffic_ops:2.1
+# for strace capability add  --cap-add SYS_PTRACE
+
+FROM centos
 MAINTAINER Dan Kirkwood
 
-RUN yum install -y perl cpanminus perl-Test-CPAN-Meta
+RUN yum install -y perl cpanminus perl-Test-CPAN-Meta wget
+RUN wget https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/pgdg-redhat96-9.6-3.noarch.rpm
+RUN rpm -ihv pgdg-redhat96-9.6-3.noarch.rpm
 RUN cpanm Carton
 
-# Override RPM arg to use a different one using --build-arg RPM=...  Can be local file or http://...
-ARG RPM=http://traffic-control-cdn.net/downloads/1.7.0/RELEASE-1.7.0/traffic_ops-1.7.0-3908.5b77f60f.x86_64.rpm
+# MUST provide RPM arg using --build-arg RPM=...  Can be local file or http://...
+ARG RPM=traffic_ops-2.1.0-6486.3d55fbad.el7.x86_64.rpm
 ADD $RPM /
-RUN yum install -y /$(basename $RPM)
+
+RUN yum install -y /$(basename $RPM) postgresql96 postgresql96-devel git
 
 # once installed, remove rpm to lower image size
 RUN rm /$(basename $RPM)
 
-RUN cd /opt/traffic_ops/app && carton
-
-RUN export PERL5LIB=/opt/traffic_ops/app/local/lib/perl5/:/opt/traffic_ops/install/lib/ \
-	&& export TERM=xterm \
-	&& export USER=root \
-	&& yes | /opt/traffic_ops/install/bin/build_trafficops_perl_library -i
-
-RUN export PERL5LIB=/opt/traffic_ops/app/local/lib/perl5/:/opt/traffic_ops/install/lib/ \
-	&& export TERM=xterm \
-	&& export USER=root \
-	&& /opt/traffic_ops/install/bin/download_web_deps -i
-
-# \todo add Drive Letters to postinstall input
-RUN sed -i -- 's/"value": "b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y"/"value": "0"/g' /opt/traffic_ops/install/data/profiles/profile.trafficserver_edge.traffic_ops
-RUN sed -i -- 's/"value": "b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y"/"value": "0"/g' /opt/traffic_ops/install/data/profiles/profile.trafficserver_mid.traffic_ops
-
-RUN echo "{\"user\": \"riakuser\",\"password\": \"$TRAFFIC_VAULT_PASS\"}" > /opt/traffic_ops/app/conf/production/riak.conf
+RUN cd /opt/traffic_ops/app && carton # this is run again by postinstall but running it at build time speeds up image start up time (at the cost of build time...).
 
 EXPOSE 443
 WORKDIR /opt/traffic_ops/app
 ENV MOJO_MODE production
 ADD profile.origin.traffic_ops /
 ADD run.sh /
+ADD defaults.json /
+RUN cp /defaults.json /opt/traffic_ops/app/defaults.json
 CMD /run.sh
