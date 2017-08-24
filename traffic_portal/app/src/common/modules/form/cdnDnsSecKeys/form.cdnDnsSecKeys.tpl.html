@@ -1,0 +1,47 @@
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<div class="x_panel">
+    <div class="x_title">
+        <ol class="breadcrumb pull-left">
+            <li><a ng-click="navigateToPath('/admin/cdns')">CDNs</a></li>
+            <li><a ng-click="navigateToPath('/admin/cdns/' + cdn.id)">{{cdn.displayName}}</a></li>
+            <li><a ng-click="navigateToPath('/admin/cdns/' + cdn.id + '/dns-sec-keys')">DNS Sec Keys</a></li>
+        </ol>
+        <div class="clearfix"></div>
+    </div>
+    <div class="x_content">
+        <br>
+        <form name="cdnDnsSecKeysForm" class="form-horizontal form-label-left" novalidate>
+            <div class="form-group" ng-class="{'has-error': hasError(cdnDnsSecKeysForm.field), 'has-feedback': hasError(cdnDnsSecKeysForm.field)}">
+                <label class="control-label col-md-2 col-sm-2 col-xs-12">Order *</label>
+                <div class="col-md-10 col-sm-10 col-xs-12">
+                    <input id="field" name="field" type="text" class="form-control" ng-model="regex.field" ng-required="true" ng-maxlength="3" ng-pattern="/^\d+$/" autofocus>
+                    <small class="input-error" ng-show="hasPropertyError(cdnDnsSecKeysForm.field, 'required')">Required</small>
+                    <small class="input-error" ng-show="hasPropertyError(cdnDnsSecKeysForm.field, 'maxlength')">Too Long</small>
+                    <small class="input-error" ng-show="hasPropertyError(cdnDnsSecKeysForm.field, 'pattern')">Number</small>
+                    <span ng-show="hasError(cdnDnsSecKeysForm.field)" class="form-control-feedback"><i class="fa fa-times"></i></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" ng-disabled="cdnDnsSecKeysForm.$pristine || cdnDnsSecKeysForm.$invalid" ng-click="generateDnsSecKeys()">Generate Keys</button>
+            </div>
+        </form>
+    </div>
+</div>
