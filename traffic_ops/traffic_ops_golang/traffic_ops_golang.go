@@ -34,7 +34,6 @@ const Version = "0.1"
 
 const DefaultConfigPath = "/opt/traffic_ops/traffic_ops_golang.config"
 
-const OldConfig = true
 const OldConfigCDNConfPath = "/opt/traffic_ops/app/conf/cdn.conf"
 const OldConfigDBConfPath = "/opt/traffic_ops/app/conf/production/database.conf"
 
