@@ -28,6 +28,8 @@ import (
 	"github.com/apache/incubator-trafficcontrol/traffic_monitor_golang/common/log"
 
 	_ "github.com/lib/pq"
+	"./db"
+	"github.com/jmoiron/sqlx"
 )
 
 const Version = "0.1"
@@ -69,15 +71,15 @@ func main() {
 		sslStr = "disable"
 	}
 
-	db, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=%s", cfg.DBUser, cfg.DBPass, cfg.DBServer, cfg.DBDB, sslStr))
+	dbDriver, err := sqlx.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=%s", cfg.DBUser, cfg.DBPass, cfg.DBServer, cfg.DBDB, sslStr))
 	if err != nil {
 		log.Errorf("opening database: %v\n", err)
 		return
 	}
-	defer db.Close()
+	defer dbDriver.Close()
 
-	db.SetMaxOpenConns(cfg.MaxDBConnections)
-
+	dbDriver.SetMaxOpenConns(cfg.MaxDBConnections)
+	dbWrapper := db.DB{dbDriver}
 	if err := RegisterRoutes(ServerData{DB: db, Config: cfg}); err != nil {
 		log.Errorf("registering routes: %v\n", err)
 		return
