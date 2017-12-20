@@ -1,4 +1,4 @@
-package tc
+package api
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -19,37 +19,37 @@ package tc
  * under the License.
  */
 
-type ErrorConstant string
-
-func (e ErrorConstant) Error() string { return string(e) }
-
-const DBError = ErrorConstant("database access error")
-
-const ApplicationJson = "application/json"
-const Gzip = "gzip"
-const ContentType = "Content-Type"
-const ContentEncoding = "Content-Encoding"
-
-type AlertLevel int
-
-const (
-	SuccessLevel AlertLevel = iota
-	InfoLevel
-	WarnLevel
-	ErrorLevel
+import (
+	"github.com/jmoiron/sqlx"
+	"github.com/apache/incubator-trafficcontrol/lib/go-tc"
 )
 
-var alertLevels = [4]string{"success", "info", "warn", "error"}
+type Updater interface {
+	Update(db *sqlx.DB) (error, tc.ApiErrorType)
+	Identifier
+	Validator
 
-func (a AlertLevel) String() string {
-	return alertLevels[a]
 }
 
-type ApiErrorType int
+type Identifier interface {
+	GetID() int
+	GetType() string
+	GetName() string
+}
 
-const (
-	NoError ApiErrorType = iota
-	SystemLevel
-	DataConflict
-	DataMissing
-)
+type Inserter interface {
+	Insert(db *sqlx.DB) (error, tc.ApiErrorType)
+	SetID(int)
+	Identifier
+	Validator
+}
+
+type Deleter interface {
+	Delete(db *sqlx.DB) (error, tc.ApiErrorType)
+	SetID(int)
+	Identifier
+}
+
+type Validator interface {
+	Validate() []error
+}

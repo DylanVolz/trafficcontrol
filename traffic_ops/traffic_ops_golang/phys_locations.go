@@ -26,8 +26,10 @@ import (
 	"net/url"
 
 	"github.com/apache/incubator-trafficcontrol/lib/go-log"
-	tc "github.com/apache/incubator-trafficcontrol/lib/go-tc"
+	"github.com/apache/incubator-trafficcontrol/lib/go-tc"
+	"github.com/apache/incubator-trafficcontrol/traffic_ops/traffic_ops_golang/dbhelpers"
 	"github.com/jmoiron/sqlx"
+	"github.com/apache/incubator-trafficcontrol/traffic_ops/traffic_ops_golang/api"
 )
 
 const PhysLocationsPrivLevel = 10
@@ -41,7 +43,7 @@ func physLocationsHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		ctx := r.Context()
-		pathParams, err := getPathParams(ctx)
+		pathParams, err := api.GetPathParams(ctx)
 		if err != nil {
 			handleErr(err, http.StatusInternalServerError)
 			return
@@ -92,7 +94,7 @@ func getPhysLocations(v url.Values, db *sqlx.DB) ([]tc.PhysLocation, error) {
 		"region":   "r.name",
 	}
 
-	query, queryValues := BuildQuery(v, selectPhysLocationsQuery(), queryParamsToQueryCols)
+	query, queryValues := dbhelpers.BuildQuery(v, selectPhysLocationsQuery(), queryParamsToQueryCols)
 
 	rows, err = db.NamedQuery(query, queryValues)
 	if err != nil {

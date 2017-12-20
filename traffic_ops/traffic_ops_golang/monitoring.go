@@ -32,6 +32,7 @@ import (
 
 	"github.com/apache/incubator-trafficcontrol/lib/go-log"
 	"github.com/apache/incubator-trafficcontrol/traffic_ops/traffic_ops_golang/auth"
+	"github.com/apache/incubator-trafficcontrol/traffic_ops/traffic_ops_golang/api"
 )
 
 const MonitoringPrivLevel = auth.PrivLevelReadOnly
@@ -116,7 +117,7 @@ func monitoringHandler(db *sqlx.DB) http.HandlerFunc {
 			fmt.Fprintf(w, http.StatusText(status))
 		}
 		ctx := r.Context()
-		pathParams, err := getPathParams(ctx)
+		pathParams, err := api.GetPathParams(ctx)
 		if err != nil {
 			handleErr(err, http.StatusInternalServerError)
 			return

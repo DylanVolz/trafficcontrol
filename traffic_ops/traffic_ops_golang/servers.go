@@ -27,10 +27,12 @@ import (
 	"strconv"
 
 	"github.com/apache/incubator-trafficcontrol/lib/go-log"
-	tc "github.com/apache/incubator-trafficcontrol/lib/go-tc"
+	"github.com/apache/incubator-trafficcontrol/lib/go-tc"
 	"github.com/apache/incubator-trafficcontrol/traffic_ops/traffic_ops_golang/auth"
+	"github.com/apache/incubator-trafficcontrol/traffic_ops/traffic_ops_golang/dbhelpers"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/apache/incubator-trafficcontrol/traffic_ops/traffic_ops_golang/api"
 )
 
 // ServersPrivLevel - privileges for the /servers endpoint
@@ -47,12 +49,14 @@ func serversHandler(db *sqlx.DB) http.HandlerFunc {
 
 		// p PathParams, username string, privLevel int
 		ctx := r.Context()
-		privLevel, err := auth.GetPrivLevel(ctx)
+		user, err := auth.GetCurrentUser(ctx)
 		if err != nil {
 			handleErr(err, http.StatusInternalServerError)
 			return
 		}
-		pathParams, err := getPathParams(ctx)
+		privLevel := user.PrivLevel
+
+		pathParams, err := api.GetPathParams(ctx)
 		if err != nil {
 			handleErr(err, http.StatusInternalServerError)
 			return
@@ -119,7 +123,7 @@ func getServers(v url.Values, db *sqlx.DB, privLevel int) ([]tc.Server, error) {
 		"type":         "t.name",
 	}
 
-	query, queryValues := BuildQuery(v, selectServersQuery(), queryParamsToSQLCols)
+	query, queryValues := dbhelpers.BuildQuery(v, selectServersQuery(), queryParamsToSQLCols)
 
 	rows, err = db.NamedQuery(query, queryValues)
 	if err != nil {

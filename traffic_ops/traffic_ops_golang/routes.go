@@ -31,6 +31,8 @@ import (
 	tclog "github.com/apache/incubator-trafficcontrol/lib/go-log"
 	"github.com/apache/incubator-trafficcontrol/traffic_ops/traffic_ops_golang/auth"
 	"github.com/basho/riak-go-client"
+	"github.com/apache/incubator-trafficcontrol/traffic_ops/traffic_ops_golang/cdn"
+	"github.com/apache/incubator-trafficcontrol/traffic_ops/traffic_ops_golang/api"
 )
 
 var Authenticated = true
@@ -45,13 +47,19 @@ func handlerToFunc(handler http.Handler) http.HandlerFunc {
 // Routes returns the routes, and a catchall route for when no route matches.
 func Routes(d ServerData) ([]Route, http.Handler, error) {
 	proxyHandler := rootHandler(d)
-
 	routes := []Route{
 		//ASNs
 		{1.2, http.MethodGet, `asns/?(\.json)?$`, ASNsHandler(d.DB), ASNsPrivLevel, Authenticated, nil},
 		//CDNs
-		{1.2, http.MethodGet, `cdns/?(\.json)?$`, cdnsHandler(d.DB), CDNsPrivLevel, Authenticated, nil},
+		{1.2, http.MethodGet, `cdns/?(\.json)?$`, cdn.CdnsHandler(d.DB), cdn.CDNsPrivLevel, Authenticated, nil},
+		{1.2, http.MethodGet, `cdns/{id}$`, cdn.CdnsHandler(d.DB), cdn.CDNsPrivLevel, Authenticated, nil},
 		{1.2, http.MethodGet, `cdns/{name}/configs/monitoring(\.json)?$`, monitoringHandler(d.DB), MonitoringPrivLevel, Authenticated, nil},
+		//CDN generic handlers:
+		{1.2, http.MethodPut,`cdns/{id}$`, api.UpdateHandler(cdn.GetRefType(),d.DB), cdn.CDNsPrivLevel, Authenticated, nil},
+		{1.2, http.MethodPost,`cdns/?$`, api.CreateHandler(cdn.GetRefType(),d.DB), cdn.CDNsPrivLevel, Authenticated, nil},
+		{1.2, http.MethodDelete,`cdns/{id}$`, api.DeleteHandler(cdn.GetRefType(),d.DB), cdn.CDNsPrivLevel, Authenticated, nil},
+
+
 		// Delivery services
 		{1.3, http.MethodGet, `deliveryservices/{xmlID}/urisignkeys$`, getURIsignkeysHandler(d.DB, d.Config), auth.PrivLevelAdmin, Authenticated, nil},
 		{1.3, http.MethodPost, `deliveryservices/{xmlID}/urisignkeys$`, saveDeliveryServiceURIKeysHandler(d.DB, d.Config), auth.PrivLevelAdmin, Authenticated, nil},
