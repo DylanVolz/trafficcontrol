@@ -21,6 +21,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"regexp"
 	"sort"
@@ -28,10 +29,8 @@ import (
 	"strings"
 
 	"github.com/apache/incubator-trafficcontrol/lib/go-log"
-
-	"fmt"
-
 	"github.com/apache/incubator-trafficcontrol/traffic_ops/traffic_ops_golang/api"
+
 	"github.com/jmoiron/sqlx"
 )
 
@@ -141,15 +140,7 @@ func CompileRoutes(routes map[string][]PathHandler) map[string][]CompiledRoute {
 				pattern := `([^/]+)`
 				param := results[0]
 				if len(results) > 1 {
-					patternType := strings.Join(results[1:], ":") //handles the case where a : is in the pattern (since we aren't supporting custom regex this is currently unneeded)
-					switch patternType {
-					case "integer":
-						pattern = `([0-9]+)`
-					case "string":
-						pattern = `([^/]+)`
-					default:
-						pattern = `([^/]+)`
-					}
+					pattern = `(` + strings.Join(results[1:], ":") + `)` //handles the case where a : is in the pattern
 				}
 				params = append(params, param)
 				route = route[:open] + pattern + route[close+1:]
