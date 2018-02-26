@@ -135,10 +135,24 @@ func CompileRoutes(routes map[string][]PathHandler) map[string][]CompiledRoute {
 				if close < 0 {
 					panic("malformed route")
 				}
-				param := route[open+1 : close]
+				paramWithType := route[open+1 : close]
 
+				results := strings.Split(paramWithType, ":")
+				pattern := `([^/]+)`
+				param := results[0]
+				if len(results) > 1 {
+					patternType := strings.Join(results[1:], ":") //handles the case where a : is in the pattern (since we aren't supporting custom regex this is currently unneeded)
+					switch patternType {
+					case "integer":
+						pattern = `([0-9]+)`
+					case "string":
+						pattern = `([^/]+)`
+					default:
+						pattern = `([^/]+)`
+					}
+				}
 				params = append(params, param)
-				route = route[:open] + `([^/]+)` + route[close+1:]
+				route = route[:open] + pattern + route[close+1:]
 			}
 			regex := regexp.MustCompile(route)
 			compiledRoutes[method] = append(compiledRoutes[method], CompiledRoute{Handler: handler, Regex: regex, Params: params})
