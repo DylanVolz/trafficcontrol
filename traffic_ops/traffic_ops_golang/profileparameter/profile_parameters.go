@@ -46,12 +46,16 @@ func GetRefType() *TOProfileParameter {
 	return &refType
 }
 
+func (pp TOProfileParameter) GetKeyFieldsInfo() []api.KeyFieldInfo {
+	return []api.KeyFieldInfo{{Field: "profile",Func: api.GetIntKey}, {Field: "profile",Func: api.GetIntKey}}
+}
+
 //Implementation of the Identifier, Validator interface functions
-func (pp *TOProfileParameter) GetID() (int, bool) {
-	if pp.Profile == nil {
-		return 0, false
+func (pp *TOProfileParameter) GetKeys() (map[string]interface{}, bool) {
+	if pp.Profile == nil || pp.Parameter == nil {
+		return map[string]interface{}{"profile":0,"parameter":0}, false
 	}
-	return *pp.Profile, true
+	return map[string]interface{}{"profile":*pp.Profile,"parameter":*pp.Parameter}, true
 }
 
 func (pp *TOProfileParameter) GetAuditName() string {
@@ -65,8 +69,11 @@ func (pp *TOProfileParameter) GetType() string {
 	return "profileParameter"
 }
 
-func (pp *TOProfileParameter) SetID(i int) {
-	pp.Profile = &i
+func (pp *TOProfileParameter) SetKeys(keys map[string]interface{}) {
+	profile, _ := keys["profile"].(int) //this utilizes the non panicking type assertion, if the thrown away ok variable is false i will be the zero of the type, 0 here.
+	parameter, _ := keys["parameter"].(int) //this utilizes the non panicking type assertion, if the thrown away ok variable is false i will be the zero of the type, 0 here.
+	pp.Profile = &profile
+	pp.Parameter = &parameter
 }
 
 // Validate fulfills the api.Validator interface
@@ -335,12 +342,12 @@ func updateQuery() string {
 profile_parameter SET
 profile=:profile,
 parameter=:parameter
-WHERE id=:id RETURNING last_updated`
+WHERE profile=:profile AND parameter=:parameter RETURNING last_updated`
 	return query
 }
 
 func deleteQuery() string {
 	query := `DELETE FROM profile_parameter
-WHERE id=:id`
+WHERE profile=:profile AND parameter=:parameter`
 	return query
 }
