@@ -1615,8 +1615,13 @@ sub get_cookie {
 		&sleep_rand($login_dispersion);
 	}
 
-	my $url = $to_host . "/login";
-	my $response = $lwp_conn->post( $url, [ 'u' => $u, 'p' => $p ], %headers );
+	my $url = $to_host . "/api/1.3/user/login";
+
+	my %body;
+	$body{u} = $u;
+	$body{p} = $p;
+
+	my $response = $lwp_conn->post( $url, Content => encode_json(\%json) , %headers );
 
 	&check_lwp_response_code($response, $FATAL);
 
