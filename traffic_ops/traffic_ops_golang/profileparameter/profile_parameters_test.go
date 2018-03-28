@@ -46,9 +46,12 @@ func getTestProfileParameters() []tc.ProfileParameterNullable {
 	}
 	pps = append(pps, pp)
 
+
+	parameter2 := 2
+
 	pp2 := pp
 	pp2.Profile = &profile
-	pp2.Parameter = &parameter
+	pp2.Parameter = &parameter2
 	pps = append(pps, pp2)
 
 	return pps

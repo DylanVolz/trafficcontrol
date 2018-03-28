@@ -47,7 +47,7 @@ func GetRefType() *TOProfileParameter {
 }
 
 func (pp TOProfileParameter) GetKeyFieldsInfo() []api.KeyFieldInfo {
-	return []api.KeyFieldInfo{{Field: "profile",Func: api.GetIntKey}, {Field: "profile",Func: api.GetIntKey}}
+	return []api.KeyFieldInfo{{Field: "profile",Func: api.GetIntKey}, {Field: "parameter",Func: api.GetIntKey}}
 }
 
 //Implementation of the Identifier, Validator interface functions
@@ -126,11 +126,12 @@ func (pp *TOProfileParameter) Create(db *sqlx.DB, user auth.CurrentUser) (error,
 	defer resultRows.Close()
 
 	var profile int
+	var parameter int
 	var lastUpdated tc.TimeNoMod
 	rowsAffected := 0
 	for resultRows.Next() {
 		rowsAffected++
-		if err := resultRows.Scan(&profile, &lastUpdated); err != nil {
+		if err := resultRows.Scan(&profile, &parameter, &lastUpdated); err != nil {
 			log.Error.Printf("could not scan profile from insert: %s\n", err)
 			return tc.DBError, tc.SystemError
 		}
@@ -146,7 +147,7 @@ func (pp *TOProfileParameter) Create(db *sqlx.DB, user auth.CurrentUser) (error,
 		return tc.DBError, tc.SystemError
 	}
 
-	pp.SetID(profile)
+	pp.SetKeys(map[string]interface{}{"profile": profile, "parameter": parameter})
 	pp.LastUpdated = &lastUpdated
 	err = tx.Commit()
 	if err != nil {
@@ -162,21 +163,18 @@ func insertQuery() string {
 profile,
 parameter) VALUES (
 :profile,
-:parameter) RETURNING profile_profile,last_updated`
+:parameter) RETURNING profile, parameter, last_updated`
 	return query
 }
 
 func (pp *TOProfileParameter) Read(db *sqlx.DB, parameters map[string]string, user auth.CurrentUser) ([]interface{}, []error, tc.ApiErrorType) {
 	var rows *sqlx.Rows
-
-	privLevel := user.PrivLevel
-
 	// Query Parameters to Database Query column mappings
 	// see the fields mapped in the SQL query
 	queryParamsToQueryCols := map[string]dbhelpers.WhereColumnInfo{
-		"profile":      dbhelpers.WhereColumnInfo{"pp.profile", api.IsInt},
-		"last_updated": dbhelpers.WhereColumnInfo{"pp.last_updated", nil},
-		"name":         dbhelpers.WhereColumnInfo{"p.parameter", nil},
+		"profile":      dbhelpers.WhereColumnInfo{"profile", api.IsInt},
+		"last_updated": dbhelpers.WhereColumnInfo{"last_updated", nil},
+		"parameter":         dbhelpers.WhereColumnInfo{"parameter", api.IsInt},
 	}
 
 	where, orderBy, queryValues, errs := dbhelpers.BuildWhereAndOrderBy(parameters, queryParamsToQueryCols)
@@ -194,26 +192,18 @@ func (pp *TOProfileParameter) Read(db *sqlx.DB, parameters map[string]string, us
 	}
 	defer rows.Close()
 
-	params := []interface{}{}
-	hiddenField := "********"
+	profileParams := []interface{}{}
 	for rows.Next() {
-		var p tc.ParameterNullable
+		var p tc.ProfileParameterNullable
 		if err = rows.StructScan(&p); err != nil {
 			log.Errorf("error parsing pp rows: %v", err)
 			return nil, []error{tc.DBError}, tc.SystemError
 		}
-		var isSecure bool
-		if p.Secure != nil {
-			isSecure = *p.Secure
-		}
 
-		if isSecure && (privLevel < auth.PrivLevelAdmin) {
-			p.Value = &hiddenField
-		}
-		params = append(params, p)
+		profileParams = append(profileParams, p)
 	}
 
-	return params, []error{}, tc.NoError
+	return profileParams, []error{}, tc.NoError
 
 }
 
@@ -300,7 +290,7 @@ func (pp *TOProfileParameter) Delete(db *sqlx.DB, user auth.CurrentUser) (error,
 		log.Error.Printf("could not begin transaction: %v", err)
 		return tc.DBError, tc.SystemError
 	}
-	log.Debugf("about to run exec query: %s with parameter: %++v", deleteQuery(), pp)
+	log.Debugf("about to run exec query: %s with profile: %v and parameter: %v\n", deleteQuery(), *pp.Profile, *pp.Parameter)
 	result, err := tx.NamedExec(deleteQuery(), pp)
 	if err != nil {
 		log.Errorf("received error: %++v from delete execution", err)
@@ -329,10 +319,10 @@ func (pp *TOProfileParameter) Delete(db *sqlx.DB, user auth.CurrentUser) (error,
 func selectQuery() string {
 
 	query := `SELECT
-p.last_updated,
-p.profile,
-p.parameter
-FROM profile_parameter p`
+last_updated,
+profile,
+parameter
+FROM profile_parameter`
 	return query
 }
 
