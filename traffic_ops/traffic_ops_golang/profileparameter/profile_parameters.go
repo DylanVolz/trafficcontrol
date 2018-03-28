@@ -331,7 +331,6 @@ func selectQuery() string {
 	query := `SELECT
 p.last_updated,
 p.profile,
-p.id,
 p.parameter
 FROM profile_parameter p`
 	return query
