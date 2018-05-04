@@ -17,24 +17,24 @@
  * under the License.
  */
 
-var TableCapabilitiesController = function(capabilities, $scope, $state, locationUtils) {
+var TableCapabilityUsersController = function(capability, capUsers, $scope, $state, locationUtils) {
 
-	$scope.capabilities = capabilities;
+	$scope.capability = capability;
 
-	$scope.editCapability = function(name) {
-		locationUtils.navigateToPath('/capabilities/' + name);
-	};
+	$scope.capUsers = capUsers;
 
-	$scope.createCapability = function() {
-		locationUtils.navigateToPath('/capabilities/new');
+	$scope.editUser = function(id) {
+		locationUtils.navigateToPath('/users/' + id);
 	};
 
 	$scope.refresh = function() {
 		$state.reload(); // reloads all the resolves for the view
 	};
 
+	$scope.navigateToPath = locationUtils.navigateToPath;
+
 	angular.element(document).ready(function () {
-		$('#capabilitiesTable').dataTable({
+		$('#capUsersTable').dataTable({
 			"aLengthMenu": [[25, 50, 100, -1], [25, 50, 100, "All"]],
 			"iDisplayLength": 25,
 			"aaSorting": []
@@ -43,5 +43,5 @@ var TableCapabilitiesController = function(capabilities, $scope, $state, locatio
 
 };
 
-TableCapabilitiesController.$inject = ['capabilities', '$scope', '$state', 'locationUtils'];
-module.exports = TableCapabilitiesController;
+TableCapabilityUsersController.$inject = ['capability', 'capUsers', '$scope', '$state', 'locationUtils'];
+module.exports = TableCapabilityUsersController;

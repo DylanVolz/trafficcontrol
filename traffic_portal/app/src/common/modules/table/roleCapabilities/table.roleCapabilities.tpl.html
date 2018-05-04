@@ -40,7 +40,7 @@ under the License.
             </tr>
             </thead>
             <tbody>
-            <tr ng-repeat="c in ::role.capabilities">
+            <tr ng-click="editCapability(c)" ng-repeat="c in ::role.capabilities">
                 <td data-search="^{{::c}}$">{{::c}}</td>
                 <td style="text-align: right;">
                     <a class="link action-link" title="Remove Capability from Role" ng-click="confirmRemoveCapability(c, $event)"><i class="fa fa-sm fa-chain-broken"></i></a>

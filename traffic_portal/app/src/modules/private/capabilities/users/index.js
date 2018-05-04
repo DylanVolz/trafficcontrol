@@ -17,31 +17,26 @@
  * under the License.
  */
 
-var TableCapabilitiesController = function(capabilities, $scope, $state, locationUtils) {
-
-	$scope.capabilities = capabilities;
-
-	$scope.editCapability = function(name) {
-		locationUtils.navigateToPath('/capabilities/' + name);
-	};
-
-	$scope.createCapability = function() {
-		locationUtils.navigateToPath('/capabilities/new');
-	};
-
-	$scope.refresh = function() {
-		$state.reload(); // reloads all the resolves for the view
-	};
-
-	angular.element(document).ready(function () {
-		$('#capabilitiesTable').dataTable({
-			"aLengthMenu": [[25, 50, 100, -1], [25, 50, 100, "All"]],
-			"iDisplayLength": 25,
-			"aaSorting": []
-		});
+module.exports = angular.module('trafficPortal.private.capabilities.users', [])
+	.config(function($stateProvider, $urlRouterProvider) {
+		$stateProvider
+			.state('trafficPortal.private.capabilities.users', {
+				url: '/{capName}/users',
+				views: {
+					capabilitiesContent: {
+						templateUrl: 'common/modules/table/capabilityUsers/table.capabilityUsers.tpl.html',
+						controller: 'TableCapabilityUsersController',
+						resolve: {
+							capability: function($stateParams, capabilityService) {
+								return capabilityService.getCapability($stateParams.capName);
+							},
+							capUsers: function($stateParams, userService) {
+								return userService.getUsers({ capability: $stateParams.capName });
+							}
+						}
+					}
+				}
+			})
+		;
+		$urlRouterProvider.otherwise('/');
 	});
-
-};
-
-TableCapabilitiesController.$inject = ['capabilities', '$scope', '$state', 'locationUtils'];
-module.exports = TableCapabilitiesController;
