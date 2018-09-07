@@ -149,7 +149,7 @@ type DeliveryServiceNullable struct {
 	CacheURL                 *string                 `json:"cacheurl" db:"cacheurl"`
 	CCRDNSTTL                *int                    `json:"ccrDnsTtl" db:"ccr_dns_ttl"`
 	CDNID                    *int                    `json:"cdnId" db:"cdn_id"`
-	CDNName                  *string                 `json:"cdnName"`
+	CDNName                  *string                 `json:"cdnName" db:"cdn_name"`
 	CheckPath                *string                 `json:"checkPath" db:"check_path"`
 	DisplayName              *string                 `json:"displayName" db:"display_name"`
 	DNSBypassCNAME           *string                 `json:"dnsBypassCname" db:"dns_bypass_cname"`
@@ -158,7 +158,6 @@ type DeliveryServiceNullable struct {
 	DNSBypassTTL             *int                    `json:"dnsBypassTtl" db:"dns_bypass_ttl"`
 	DSCP                     *int                    `json:"dscp" db:"dscp"`
 	EdgeHeaderRewrite        *string                 `json:"edgeHeaderRewrite" db:"edge_header_rewrite"`
-	FQPacingRate             *int                    `json:"fqPacingRate" db:"fq_pacing_rate"`
 	GeoLimit                 *int                    `json:"geoLimit" db:"geo_limit"`
 	GeoLimitCountries        *string                 `json:"geoLimitCountries" db:"geo_limit_countries"`
 	GeoLimitRedirectURL      *string                 `json:"geoLimitRedirectURL" db:"geolimit_redirect_url"`
@@ -183,9 +182,9 @@ type DeliveryServiceNullable struct {
 	MultiSiteOrigin          *bool                   `json:"multiSiteOrigin" db:"multi_site_origin"`
 	OriginShield             *string                 `json:"originShield" db:"origin_shield"`
 	OrgServerFQDN            *string                 `json:"orgServerFqdn" db:"org_server_fqdn"`
-	ProfileDesc              *string                 `json:"profileDescription"`
-	ProfileID                *int                    `json:"profileId" db:"profile"`
-	ProfileName              *string                 `json:"profileName"`
+	ProfileDesc              *string                 `json:"profileDescription" db:"profile_description"`
+	ProfileID                *int                    `json:"profileId" db:"profile_id"`
+	ProfileName              *string                 `json:"profileName" db:"profile_name"`
 	Protocol                 *int                    `json:"protocol" db:"protocol"`
 	QStringIgnore            *int                    `json:"qstringIgnore" db:"qstring_ignore"`
 	RangeRequestHandling     *int                    `json:"rangeRequestHandling" db:"range_request_handling"`
@@ -196,8 +195,8 @@ type DeliveryServiceNullable struct {
 	Signed                   bool                    `json:"signed"`
 	SSLKeyVersion            *int                    `json:"sslKeyVersion" db:"ssl_key_version"`
 	TenantID                 *int                    `json:"tenantId" db:"tenant_id"`
-	Type                     *DSType                 `json:"type"`
-	TypeID                   *int                    `json:"typeId" db:"type"`
+	Type                     *DSType                 `json:"type" db:"type_name"`
+	TypeID                   *int                    `json:"typeId" db:"type_id"`
 	XMLID                    *string                 `json:"xmlId" db:"xml_id"`
 	ExampleURLs              []string                `json:"exampleURLs"`
 }
@@ -209,11 +208,11 @@ type DeliveryServiceNullableV12 struct {
 type DeliveryServiceNullableV13 struct {
 	DeliveryServiceNullableV12
 	DeepCachingType   *DeepCachingType `json:"deepCachingType" db:"deep_caching_type"`
-	FQPacingRate      *int             `json:"fqPacingRate,omitempty"`
+	FQPacingRate      *int             `json:"fqPacingRate,omitempty" db:"fq_pacing_rate"`
 	SigningAlgorithm  *string          `json:"signingAlgorithm" db:"signing_algorithm"`
-	Tenant            *string          `json:"tenant,omitempty"`
-	TRResponseHeaders *string          `json:"trResponseHeaders,omitempty"`
-	TRRequestHeaders  *string          `json:"trRequestHeaders,omitempty"`
+	Tenant            *string          `json:"tenant,omitempty" db:"tenant_name"`
+	TRResponseHeaders *string          `json:"trResponseHeaders,omitempty" db:"tr_response_headers"`
+	TRRequestHeaders  *string          `json:"trRequestHeaders,omitempty" db:"tr_request_headers"`
 }
 
 // NewDeliveryServiceNullableV13FromV12 creates a new V13 DS from a V12 DS, filling new fields with appropriate defaults.

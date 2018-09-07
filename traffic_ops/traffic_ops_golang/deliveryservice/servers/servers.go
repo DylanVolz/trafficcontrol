@@ -716,12 +716,12 @@ func dssSelectQuery() string {
 
 type TODSSDeliveryService struct {
 	ReqInfo *api.APIInfo `json:"-"`
-	tc.DSSDeliveryService
+	tc.DeliveryServiceNullableV13
 }
 
 func GetDSSDeliveryServiceReaderSingleton() func(reqInfo *api.APIInfo) api.Reader {
 	return func(reqInfo *api.APIInfo) api.Reader {
-		toReturn := TODSSDeliveryService{reqInfo, tc.DSSDeliveryService{}}
+		toReturn := TODSSDeliveryService{reqInfo, tc.DeliveryServiceNullableV13{}}
 		return &toReturn
 	}
 }
@@ -739,7 +739,7 @@ func (dss *TODSSDeliveryService) Read(params map[string]string) ([]interface{}, 
 	query := SDSSelectQuery()
 	log.Debugln("Query is ", query)
 
-	rows, err := dss.ReqInfo.Tx.Queryx(query, serverId)
+	rows, err := dss.ReqInfo.Tx.NamedQuery(query, map[string]interface{}{"server_id":serverId})
 	if err != nil {
 		log.Errorf("Error querying DeliveryserviceServers: %v", err)
 		return nil, []error{tc.DBError}, tc.SystemError
@@ -748,7 +748,10 @@ func (dss *TODSSDeliveryService) Read(params map[string]string) ([]interface{}, 
 
 	services := []interface{}{}
 	for rows.Next() {
-		var s tc.DSSDeliveryService
+		s := struct {
+			tc.DeliveryServiceNullableV13
+			CdnDomainName string `json:"-" db:"cdn_domain"`
+		}{}
 		if err = rows.StructScan(&s); err != nil {
 			log.Errorf("error parsing dss rows: %v", err)
 			return nil, []error{tc.DBError}, tc.SystemError
@@ -761,64 +764,70 @@ func (dss *TODSSDeliveryService) Read(params map[string]string) ([]interface{}, 
 
 func SDSSelectQuery() string {
 
-	selectStmt := `SELECT
- 		active,
-		ccr_dns_ttl,
-		cdn_id,
-		cacheurl,
-		check_path,
-		dns_bypass_cname,
-		dns_bypass_ip,
-		dns_bypass_ip6,
-		dns_bypass_ttl,
-		dscp,
-		display_name,
-		edge_header_rewrite,
-		geo_limit,
-		geo_limit_countries,
-		geolimit_redirect_url,
-		geo_provider,
-		global_max_mbps,
-		global_max_tps,
-		http_bypass_fqdn,
-		id,
-		ipv6_routing_enabled,
-		info_url,
-		initial_dispersion,
-		last_updated,
-		logs_enabled,
-		long_desc,
-		long_desc_1,
-		long_desc_2,
-		max_dns_answers,
-		mid_header_rewrite,
-		miss_lat,
-		miss_long,
-		multi_site_origin,
-		multi_site_origin_algorithm,
-		(SELECT o.protocol::text || '://' || o.fqdn || rtrim(concat(':', o.port::text), ':')
-		FROM origin o
-		WHERE o.deliveryservice = d.id
-		AND o.is_primary) as org_server_fqdn,
-		origin_shield,
-		profile,
-		protocol,
-		qstring_ignore,
-		range_request_handling,
-		regex_remap,
-		regional_geo_blocking,
-		remap_text,
-		routing_name,
-		ssl_key_version,
-		signing_algorithm,
-		tr_request_headers,
-		tr_response_headers,
-		tenant_id,
-		type,
-		xml_id
-	FROM deliveryservice d
-		WHERE id in (SELECT deliveryService FROM deliveryservice_server where server = $1)`
-	return selectStmt
+	//selectStmt := `SELECT
+ 	//	active,
+	//	anonymous_blocking_enabled,
+	//	ccr_dns_ttl,
+	//	cdn_id,
+	//	cdn.name as cdn_name,
+	//	cacheurl,
+	//	check_path,
+	//	CAST(deep_caching_type AS text) as deep_caching_type,
+	//	dns_bypass_cname,
+	//	dns_bypass_ip,
+	//	dns_bypass_ip6,
+	//	dns_bypass_ttl,
+	//	dscp,
+	//	display_name,
+	//	edge_header_rewrite,
+	//	fq_pacing_rate,
+	//	geo_limit,
+	//	geo_limit_countries,
+	//	geolimit_redirect_url,
+	//	geo_provider,
+	//	global_max_mbps,
+	//	global_max_tps,
+	//	http_bypass_fqdn,
+	//	ds.id,
+	//	ipv6_routing_enabled,
+	//	info_url,
+	//	initial_dispersion,
+	//	ds.last_updated,
+	//	logs_enabled,
+	//	long_desc,
+	//	long_desc_1,
+	//	long_desc_2,
+	//	max_dns_answers,
+	//	mid_header_rewrite,
+	//	miss_lat,
+	//	miss_long,
+	//	multi_site_origin,
+	//	(SELECT o.protocol::text || '://' || o.fqdn || rtrim(concat(':', o.port::text), ':') FROM origin o WHERE o.deliveryservice = ds.id AND o.is_primary) as org_server_fqdn,
+	//	origin_shield,
+	//	ds.profile,
+	//	profile.name as profile_name,
+	//	protocol,
+	//	qstring_ignore,
+	//	range_request_handling,
+	//	regex_remap,
+	//	regional_geo_blocking,
+	//	remap_text,
+	//	routing_name,
+	//	ssl_key_version,
+	//	signing_algorithm,
+	//	tr_request_headers,
+	//	tr_response_headers,
+	//	tenant_id,
+	//	ds.type as type_id,
+	//	type.name as type_name,
+	//	xml_id
+	//FROM deliveryservice ds
+	//LEFT JOIN profile on profile.id = ds.profile
+	//LEFT JOIN type on type.id = ds.type
+	//LEFT JOIN cdn on cdn.id = ds.cdn_id
+	//WHERE ds.id in (SELECT deliveryservice FROM deliveryservice_server WHERE server = $1)`
+	//return selectStmt
+	return deliveryservice.SelectQuery() + " WHERE ds.id in (SELECT deliveryservice FROM deliveryservice_server WHERE server = :server_id)"
 }
 
 func updateQuery() string {

@@ -634,7 +634,7 @@ func readGetDeliveryServices(params map[string]string, tx *sqlx.Tx, user *auth.C
 		}
 		where, queryValues = dbhelpers.AddTenancyCheck(where, queryValues, "ds.tenant_id", tenantIDs)
 	}
-	query := selectQuery() + where + orderBy
+	query := SelectQuery() + where + orderBy
 
 	log.Debugln("generated deliveryServices query: " + query)
 	log.Debugf("executing with values: %++v\n", queryValues)
@@ -959,7 +959,7 @@ func deleteLocationParam(tx *sql.Tx, configFile string) error {
 	return nil
 }
 
-func selectQuery() string {
+func SelectQuery() string {
 	return `
 SELECT
 ds.active,
@@ -967,7 +967,7 @@ ds.anonymous_blocking_enabled,
 ds.cacheurl,
 ds.ccr_dns_ttl,
 ds.cdn_id,
-cdn.name as cdnName,
+cdn.name as cdn_name,
 ds.check_path,
 CAST(ds.deep_caching_type AS text) as deep_caching_type,
 ds.display_name,
@@ -996,15 +996,15 @@ ds.long_desc_1,
 ds.long_desc_2,
 ds.max_dns_answers,
 ds.mid_header_rewrite,
-COALESCE(ds.miss_lat, 0.0),
-COALESCE(ds.miss_long, 0.0),
+COALESCE(ds.miss_lat, 0.0) as miss_lat,
+COALESCE(ds.miss_long, 0.0) as miss_long,
 ds.multi_site_origin,
 (SELECT o.protocol::::text || ':://' || o.fqdn || rtrim(concat('::', o.port::::text), '::')
 	FROM origin o
 	WHERE o.deliveryservice = ds.id
 	AND o.is_primary) as org_server_fqdn,
 ds.origin_shield,
-ds.profile as profileID,
+ds.profile as profile_id,
 profile.name as profile_name,
 profile.description  as profile_description,
 ds.protocol,
@@ -1017,10 +1017,10 @@ ds.routing_name,
 ds.signing_algorithm,
 ds.ssl_key_version,
 ds.tenant_id,
-tenant.name,
+tenant.name as tenant_name,
 ds.tr_request_headers,
 ds.tr_response_headers,
-type.name,
+type.name as type_name,
 ds.type as type_id,
 ds.xml_id,
 cdn.domain_name as cdn_domain
